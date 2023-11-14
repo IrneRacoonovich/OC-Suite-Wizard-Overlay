@@ -1,0 +1,26 @@
+name: "Release"
+
+on:
+  push:
+    tags:
+      - "*.*.*"
+
+jobs:
+  Release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    container: devkitpro/devkita64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Build
+        run: "make -j"
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+          files: oc-suite-wizard.ovl
