@@ -1,0 +1,9 @@
+BasedOnStyle: WebKit
+
+Language: Cpp
+IndentWidth: 4
+ColumnLimit: 120
+AlignAfterOpenBracket: true
+IncludeBlocks: Regroup
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: Empty

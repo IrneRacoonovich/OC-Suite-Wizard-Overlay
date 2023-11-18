@@ -39,27 +39,28 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 APP_TITLE	:=	OC-Suite Wizard
 APP_VERSION	:=	v1.0.0
+APP_AUTHOR	:=	Irne Racoonovich
 
 TARGET		:=	oc-suite-wizard
 BUILD		:=	build
 SOURCES		:=	src
 DATA		:=	data
 INCLUDES	:=	include
-#ROMFS	:=	romfs
 
-NO_ICON 	:= true
+NO_ICON 	:=	true
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
+CFLAGS	:=	-g -Wall -Wextra -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 
-CXXFLAGS	:= $(CFLAGS) -fno-exceptions -std=c++20
+CXXFLAGS	:= $(CFLAGS) -fno-exceptions -std=c++20 \
+				-DAPP_TITLE="$(APP_TITLE)" -DAPP_VERSION="$(APP_VERSION)"
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
@@ -72,7 +73,6 @@ LIBS	:= -lnx
 #---------------------------------------------------------------------------------
 LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(TOPDIR)/lib/libtesla
 
-
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
 # rules for different file extensions
@@ -80,7 +80,7 @@ LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(TOPDIR)/lib/libtesla
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export OUTPUT	:=	$(CURDIR)/$(BUILD)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
@@ -149,15 +149,11 @@ ifeq ($(strip $(NO_ICON)),)
 endif
 
 ifeq ($(strip $(NO_NACP)),)
-	export NROFLAGS += --nacp=$(CURDIR)/$(TARGET).nacp
+	export NROFLAGS += --nacp=$(TOPDIR)/$(BUILD)/$(TARGET).nacp
 endif
 
 ifneq ($(APP_TITLEID),)
 	export NACPFLAGS += --titleid=$(APP_TITLEID)
-endif
-
-ifneq ($(ROMFS),)
-	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
 endif
 
 .PHONY: $(BUILD) clean all
@@ -171,12 +167,9 @@ $(BUILD):
 
 #---------------------------------------------------------------------------------
 clean:
-	@echo clean ...
-ifeq ($(strip $(APP_JSON)),)
-	@rm -fr $(BUILD) $(TARGET).ovl $(TARGET).nacp $(TARGET).elf
-else
-	@rm -fr $(BUILD) $(TARGET).nsp $(TARGET).nso $(TARGET).npdm $(TARGET).elf 
-endif
+	@echo cleaning ...
+	@rm -fr $(BUILD)
+	@echo done
 
 
 #---------------------------------------------------------------------------------
@@ -191,7 +184,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 all	:	$(TARGET).ovl
 
 $(TARGET).ovl	:	$(OUTPUT).nro
-	@mv $(OUTPUT).nro $(TOPDIR)/$(TARGET).ovl
+	@mv $(OUTPUT).nro $(TARGET).ovl
 
 $(OUTPUT).nro	:	$(OUTPUT).elf $(OUTPUT).nacp
 
@@ -212,3 +205,13 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------
+
+.PHONY: format-check
+format-check:
+	@clang-format --style=file --dry-run -Werror \
+		$(addsuffix /*,$(SOURCES)) $(addsuffix /*,$(INCLUDES))
+
+.PHONY: format-code
+format-code:
+	@clang-format --style=file --verbose -i \
+		$(addsuffix /*,$(SOURCES)) $(addsuffix /*,$(INCLUDES))
