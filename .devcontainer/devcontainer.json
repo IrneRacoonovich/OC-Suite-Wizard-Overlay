@@ -1,0 +1,4 @@
+{
+  "name": "DevkitPro64",
+  "image": "devkitpro/devkita64:latest"
+}
